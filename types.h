@@ -9,6 +9,7 @@ typedef struct nodo {
     int id;
     struct nodo *next;
     struct nodo *prev;
+    int len;
 } listnode;
 
 #endif //TYPES_H

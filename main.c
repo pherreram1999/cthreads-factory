@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <unistd.h>
 #include "types.h"
 
 #define MAX_INJECTIONS 1000
+#define clear() printf("\033[H\033[J")
 
 // definimos mutex
 pthread_mutex_t mutexOne;
@@ -43,7 +45,6 @@ void insertIntoList(listnode **lista,int idinyeccion) {
         listnode *nuevaInyeccion = nuevaLista();
         nuevaInyeccion->id = idinyeccion;
         *lista = nuevaInyeccion;
-        printf("inserted: %d\n",(*lista)->id);
 
         return;
     }
@@ -56,7 +57,6 @@ void insertIntoList(listnode **lista,int idinyeccion) {
     nuevaInyeccion->id = idinyeccion;
     nuevaInyeccion->prev = nav;
     nav->next = nuevaInyeccion;
-    printf("inserted: %d\n",nuevaInyeccion->id);
 
 }
 
@@ -67,12 +67,11 @@ void appendNodeToList(listnode **lista,listnode *node) {
         *lista = node;
         return;
     }
-    listnode *lastNode = getLastNode(lista);
-    if(lastNode == nullptr) {
-        return; // lista vacia
+    listnode *nav = *lista;
+    while (nav->next != nullptr) {
+        nav = nav->next;
     }
-    lastNode->next = node;
-    node->next = nullptr;
+    nav->next = node;
 }
 
 /**
@@ -153,6 +152,16 @@ void *llenadoCinta(void *arg) {
 
 }
 
+int countList(listnode **lista) {
+    listnode *nav = *lista;
+    int counter = 0;
+    while (nav != nullptr) {
+        nav = nav->next;
+        counter++;
+    }
+    return counter;
+}
+
 void verLista(listnode **lista) {
     listnode *nav = *lista;
     while(nav != nullptr) {
@@ -172,7 +181,6 @@ void embalar() {
     }
     // siempre obtenemos el primer elemento de lista
     listnode * removedNode = removeNodeFromList(&cintaInyecciones,(cintaInyecciones)->id);
-    printf("embalaje: %d\n",removedNode->id);
     // ese elemento loa agregamos a la lista de embalajes
     appendNodeToList(&cintaEmbalajes,removedNode);
 }
@@ -188,27 +196,35 @@ void *moveToEmbalajes(void *arg) {
     }
 }
 
+void *printStatus(void *arg) {
+    while (true) {
+        pthread_mutex_lock(&mutexOne);
+        clear();
+        printf("Inyecciones: %d\n",countList(&cintaInyecciones));
+        printf("Embalajes: %d\n",countList(&cintaEmbalajes));
+        pthread_mutex_unlock(&mutexOne);
+
+    }
+}
+
 
 
 
 
 int main(void) {
     // declaramos los identificadores de los threads
-    pthread_t cintaTransportadoraThread, embalajesThread;
+    pthread_t
+    cintaTransportadoraThread,
+    embalajesThread,
+    statusThread;
     // inciamos los procesos en paralelo
     pthread_create(&cintaTransportadoraThread,nullptr,llenadoCinta,nullptr);
     pthread_create(&embalajesThread,nullptr,moveToEmbalajes,nullptr);
+    pthread_create(&statusThread,nullptr,printStatus,nullptr);
     // esperamos los resultados
-    pthread_join(cintaTransportadoraThread,nullptr);
-    pthread_join(embalajesThread,nullptr);
-
-
-    /*removeNodeFromList(&cintaInyecciones,3);
-    removeNodeFromList(&cintaInyecciones,4);*/
-
-
-    //embalar(nullptr);
-    // en otro proceso mostramos un cotador en otro thead
+    /*pthread_join(cintaTransportadoraThread,nullptr);
+    pthread_join(embalajesThread,nullptr);*/
+    pthread_join(statusThread,nullptr);
 
     return 0;
 }
