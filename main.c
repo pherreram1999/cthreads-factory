@@ -43,6 +43,8 @@ void insertIntoList(listnode **lista,int idinyeccion) {
         listnode *nuevaInyeccion = nuevaLista();
         nuevaInyeccion->id = idinyeccion;
         *lista = nuevaInyeccion;
+        printf("inserted: %d\n",(*lista)->id);
+
         return;
     }
 
@@ -54,6 +56,8 @@ void insertIntoList(listnode **lista,int idinyeccion) {
     nuevaInyeccion->id = idinyeccion;
     nuevaInyeccion->prev = nav;
     nav->next = nuevaInyeccion;
+    printf("inserted: %d\n",nuevaInyeccion->id);
+
 }
 
 
@@ -64,6 +68,9 @@ void appendNodeToList(listnode **lista,listnode *node) {
         return;
     }
     listnode *lastNode = getLastNode(lista);
+    if(lastNode == nullptr) {
+        return; // lista vacia
+    }
     lastNode->next = node;
     node->next = nullptr;
 }
@@ -85,7 +92,7 @@ listnode* removeNodeFromList(listnode **lista, int id) {
         // recorremos la lista
         *lista = nav->next; // este movimiento puede dejar nulo la lista
 
-        if(*lista == nullptr) {
+        if(*lista != nullptr) {
             // si la lista actual es no null,
             // ajustamos el prev
             (*lista)->prev = nullptr; // ya no apunta nada
@@ -131,6 +138,7 @@ listnode* removeNodeFromList(listnode **lista, int id) {
  * @return
  */
 void *llenadoCinta(void *arg) {
+    printf("llenando cinta de inyecciones :D\n");
     // recibimos el apuntador del apuntador de la lista
     int counter = 1;
     while(true) {
@@ -164,7 +172,7 @@ void embalar() {
     }
     // siempre obtenemos el primer elemento de lista
     listnode * removedNode = removeNodeFromList(&cintaInyecciones,(cintaInyecciones)->id);
-
+    printf("embalaje: %d\n",removedNode->id);
     // ese elemento loa agregamos a la lista de embalajes
     appendNodeToList(&cintaEmbalajes,removedNode);
 }
@@ -172,10 +180,11 @@ void embalar() {
 
 // ** se mantiene correidno sacando valores de la lista
 void *moveToEmbalajes(void *arg) {
+    printf("llenando embalajes :D\n");
     while(true) {
         pthread_mutex_lock(&mutexOne);
         embalar();
-        pthread_mutex_lock(&mutexOne);
+        pthread_mutex_unlock(&mutexOne);
     }
 }
 
