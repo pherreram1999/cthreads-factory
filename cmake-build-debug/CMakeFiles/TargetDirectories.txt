@@ -1,0 +1,3 @@
+/home/sistemas/CLionProjects/factory_theaths/cmake-build-debug/CMakeFiles/factory_theaths.dir
+/home/sistemas/CLionProjects/factory_theaths/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/sistemas/CLionProjects/factory_theaths/cmake-build-debug/CMakeFiles/rebuild_cache.dir
