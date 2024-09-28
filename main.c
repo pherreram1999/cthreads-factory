@@ -3,13 +3,15 @@
 #include <pthread.h>
 #include "types.h"
 
-#define MAX_INJECTIONS  5
+#define MAX_INJECTIONS 1000
 
 // definimos mutex
 pthread_mutex_t mutexOne;
 
 // variables globales que se compartes
 
+
+static int inyeccionesLen = 0;
 listnode *cintaInyecciones = nullptr;
 listnode *cintaEmbalajes = nullptr;
 
@@ -130,11 +132,12 @@ listnode* removeNodeFromList(listnode **lista, int id) {
  */
 void *llenadoCinta(void *arg) {
     // recibimos el apuntador del apuntador de la lista
-    for(int i = 1; i <= MAX_INJECTIONS; i++) {
-        // por cada inyeccion evitamos que se toque la lista en paralelo
+    int counter = 1;
+    while(true) {
         pthread_mutex_lock(&mutexOne);
-        insertIntoList(&cintaInyecciones,i);
+        insertIntoList(&cintaInyecciones,counter);
         pthread_mutex_unlock(&mutexOne);
+        counter++;
     }
     /*listnode *nav = &(*data);
 
@@ -155,14 +158,27 @@ void verLista(listnode **lista) {
  * @param arg
  * @return
  */
-void *embalar(void *arg) {
+void embalar() {
+    if(cintaInyecciones == nullptr) {
+        return; // sin nodos por mover
+    }
     // siempre obtenemos el primer elemento de lista
     listnode * removedNode = removeNodeFromList(&cintaInyecciones,(cintaInyecciones)->id);
-    printf("removed id: %d\n",removedNode->id);
+
     // ese elemento loa agregamos a la lista de embalajes
     appendNodeToList(&cintaEmbalajes,removedNode);
-    return nullptr;
 }
+
+
+// ** se mantiene correidno sacando valores de la lista
+void *moveToEmbalajes(void *arg) {
+    while(true) {
+        pthread_mutex_lock(&mutexOne);
+        embalar();
+        pthread_mutex_lock(&mutexOne);
+    }
+}
+
 
 
 
@@ -172,14 +188,15 @@ int main(void) {
     pthread_t cintaTransportadoraThread, embalajesThread;
     // inciamos los procesos en paralelo
     pthread_create(&cintaTransportadoraThread,nullptr,llenadoCinta,nullptr);
+    pthread_create(&embalajesThread,nullptr,moveToEmbalajes,nullptr);
     // esperamos los resultados
     pthread_join(cintaTransportadoraThread,nullptr);
+    pthread_join(embalajesThread,nullptr);
 
 
     /*removeNodeFromList(&cintaInyecciones,3);
     removeNodeFromList(&cintaInyecciones,4);*/
 
-    verLista(&cintaInyecciones);
 
     //embalar(nullptr);
     // en otro proceso mostramos un cotador en otro thead
